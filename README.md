@@ -298,7 +298,7 @@ assert(iMeantToDoThis.isNaN);
 **Lists :**  
 几乎所有的编程语言中，最常见的集合就是数组，或有序的对象组。在`Dart`中，数组是`List`对象,因此大多数人称其为列表  
 `var list = [1,2,3];`
->提醒： Dart推断列表的类型是List<int>.如果尝试将非整数的对象添加到此列表，分析器或运行时会引发错误。更多有关信息可以阅读类型推断。
+>提醒： `Dart`推断列表的类型是`List<int>`.如果尝试将非整数的对象添加到此列表，分析器或运行时会引发错误。更多有关信息可以阅读类型推断。
 
 可以在`list`元素的最后一项添加一个逗号。此逗号不会影响集合，但可以防止复制黏贴错误  
 `var list = ['car','Boat','Plane',];`  
@@ -450,3 +450,387 @@ assert(list2.length == 1);
   assert(listOfStrings[1] == '#1');
   ```
 有关使用`集合 if`和 `for` 的更多详细信息和示例，请参阅控制流集合提案.
+
+---
+### 泛型 :   
+----
+如果您查看 `API `文档中的基本数组类型 `List`，您会看到类型实际上是 `List<E>`。`<...>` 符号将 `List `标记为泛型（或参数化）类型——具有形式类型参数的类型。根据惯例，大多数类型变量都有单字母名称，如 `E`、`T`、`S`、`K` 和 `V`。  
+- E : Element `List<E>`表示一个包含element类型元素  
+- T : Type 表示类型
+- S : Set `Set<S>`表示一个包含Set类型的集合
+- K V : `Key Map<K, V>` 表示一个包含 Key 类型键和 Value 类型值的映射  
+
+**为什么使用泛型？**  
+泛型通常是强制类型安全所必需的，它们比仅仅让代码运行还能提供更多的好处：  
+- 正确指定泛型会更好的生成代码  
+- 可以使用泛型来减少代码重复  
+
+如果仅打算让`list`包含`String`,你可将其声明为`List<String>`（读做字符串列表），这样你，你的同事以及工具都可以检测到向列表中分配一个非字符串可能是一个错误。下面是一个例子:
+```
+var names = <String>[];
+names.addAll(["Seth","Kathy","Lars"]);
+names.add(42); // error
+```
+使用泛型的另外一个原因是减少代码重复。泛型允许您在多个类型之间共享单个接口和实现，同时仍利用静态分析。例如，假设您创建了一个用于缓存对象的接口：  
+```
+abstract class Object{
+  Object getByKey(String key);
+  void setByKey(String key,Object value);
+}
+```  
+你发现你需要一个字符串类型的此版本接口，所以你创建了另外一个接口：
+```
+abstract class StringCache{
+  String getByKey(String key);
+  void setByKey(String key, String value);
+}
+```  
+最后，你决定要一个特定的数字版本...您明白了。  
+泛型类型可以省去你创建这些接口的麻烦，相反，你可以创建一个带有类型参数的接口：  
+```
+abstract class Cache<T> {
+  T getByKey(String key);
+  void setByKey(String key, T value);
+}
+```
+在此代码中，T 是替代类型。它是一个占位符，您可以将其视为开发人员稍后定义的类型。
+
+----------------------
+**使用集合字面量：**
+
+-----------------
+`List`、`Set`和`Map`的字面量可以参数化。参数化字面量与您已经看到的字面量非常相似，但在开括号之前添加了 `<Type>`（对于`List`和`Set`）或 `<Key，Value>`（对于`Map`）。以下是使用类型字面量的示例 :
+```
+var names = <String>['Seth', 'Kathy', 'Lars'];
+var uniqueNames = <String>{'Seth', 'Kathy', 'Lars'};
+var pages = <String, String>{
+  'index.html': 'Homepage',
+  'robots.txt': 'Hints for web robots',
+  'humans.txt': 'We are people, not machines'
+};
+```
+---
+**将参数化类型与构造函数一起使用：**  
+要在使用构造函数时指定一种或多种类型，请将类型放在类名后面的尖括号 (<...>) 中。例如：
+```
+// 创建一个String类型的集合，from方法将一个列表转换为集合。
+var nameSet = Set<String>.from(names);
+```
+以下代码创建一个具有 `int`键和 `View `类型值的映射：
+```
+var views = Map<int, View>();
+```
+---
+**通用集合以及包含的类型 ：**  
+`Dart `泛型类型是具体化的，这意味着它们在运行时携带其类型信息。例如，您可以测试集合的类型:  
+```
+var names = <String>[];
+names.addAll(['Seth', 'Kathy', 'Lars']);
+print(names is List<String>); // true
+```
+>注意： 相比之下，`Java `中的泛型使用擦除，这意味着泛型类型参数在运行时被删除。在`Java`中，你可以测试一个对象是否是一个List，但你不能测试它是否是一个`List<String>`。  
+
+---
+**限制参数化类型：**  
+当实现泛型类型时，你可能希望限制其作为参数提供的类型，以便参数必须是特定类型的子类型。你可以使用`extends`做到这一点：  
+一个常见的案例是通过使其成为 Object 的子类（而不是默认的 Object？）来确保类型不可为 null。
+```
+// T必须是Object的子类型，这意味着Foo只能存储Object的子类型
+class Foo<T extends Object> {
+  // Any type provided to Foo for T must be non-nullable.
+}
+```
+您可以使用 `extends `来扩展除了 `Object`以外的其他类型。以下是一个扩展 `SomeBaseClass` 的例子，以便可以对类型为 `T `的对象调用 `SomeBaseClass `的成员：:
+```
+class Foo<T extends SomeBaseClass> {
+  // Implementation goes here...
+  String toString() => "Instance of 'Foo<$T>'";
+}
+
+class Extender extends SomeBaseClass {...}
+```
+可以使用 `SomeBaseClass `或其任何子类型作为泛型参数: 
+```
+var someBaseClassFoo = Foo<SomeBaseClass>();
+var extenderFoo = Foo<Extender>();
+```
+不指定通用参数也可以:
+```
+var foo = Foo();
+print(foo); // Instance of 'Foo<SomeBaseClass>'
+```
+指定任何非 SomeBaseClass 类型都会导致错误:
+```
+// 静态检查错误
+var foo = Foo<Object>();
+```
+---
+**使用泛型方法：**  
+方法和函数也允许类型参数:  
+```
+T first<T>(List<T> ts) {
+  // Do some initial work or error checking, then...
+  T tmp = ts[0];
+  // Do some additional checking or processing...
+  return tmp;
+}
+```
+`first(<T>) `上的泛型类型参数允许您在多个地方使用类型参数 `T` : 
+- 在函数的返回类型(T)中
+- 在参数类型中`List<T>`
+- 在局部变量的类型(T tmp)
+-------
+ 
+### 类型定义（Typedefs）:  
+类型别名(`type alias`)(通常称为`typedef`,因为它使用关键字`typedef`来声明)是一种引用类型的简洁方式。下面是声明和使用名为`intList`的类型别名的示例:
+```
+typedef IntList = List<int>;
+IntList il = [1,2,3];
+```
+类型别名可以有类型参数：
+```
+// 定义了一个ListMapper<x>的别名，等同于Map<X,List<X>>
+typedef ListMapper<X> = Map<X, List<X>>;
+// 定义了一个名为m1的Map<String,List<String>>类型变量
+Map<String, List<String>> m1 = {}; // Verbose
+// 定义了一个名为m2的ListMapper<String>类型变量
+ListMapper<String> m2 = {}; // Same thing but shorter and clearer.
+// m1和m2是相同的映射，但m2使用类型别名来简化代码，使用类型别名后，代码更简洁，也更容易理解。
+```
+>版本说明：2.13 之前，typedef 仅限于函数类型。使用新的 typedef 需要至少 2.13 的语言版本。
+
+在大多数情况下，我们建议使用内联函数类型而不是函数的 typedef。然而，函数 typedef 仍然有用：
+```
+typedef Compare<T> = int Function(T a, T b);
+int sort(int a, int b) => a - b;
+void main() {
+  assert(sort is Compare<int>); // True!
+}
+```
+---
+### Dart类型系统：
+`Dart`语言是类型安全的：它使用静态类型检查和运行时检查的组合来确保变量的值始终与变量的静态类型匹配，有时也被称为健全类型。虽然类型是强制性的，但由于类型推断，类型注释是可选的。  
+静态类型检查的好处之一是能够使用 Dart 的静态分析器在编译时查找错误。  
+您可以通过向泛型类添加类型注释来修复大多数静态分析错误。最常见的泛型类是集合类型 List<T> 和 Map<K,V>。  
+例如，在以下代码中，printInts() 函数打印一个整数列表，main() 创建一个列表并将其传递给 printInts()。
+```
+void printInts(List<int> a) => print(a);
+void main(){
+  // 该变量的类型是 List<dynamic>，初始值是一个空列表
+  final list = [];
+  list.add(1);
+  list.add('2');
+  // printInts()的参数类型是List<int>,这意味着list不能直接传给printInts()函数
+  printInts(list);
+
+}
+```
+前面的代码会在调用 `printInts(list)` 时导致列表（上面突出显示的）出现类型错误.  
+`error - The argument type 'List<dynamic>' can't be assigned to the parameter type 'List<int>'. - argument_type_not_assignable`  
+该错误突出显示从 `List<dynamic>`到 `List<int> `的不健全隐式转换。`List`变量具有静态类型`List<dynamic>`。这是因为初始化声明 `var list = [] `没有为分析器提供足够的信息来推断比动态更具体的类型参数。`printInts() `函数需要一个 `List<int> `类型的参数，这会导致类型不匹配。  
+在创建列表时添加类型注释 `(<int>) `时（下面突出显示），分析器会抱怨字符串参数无法分配给 `int `参数。删除 `list.add('2') `中的引号会导致代码通过静态分析并且运行时不会出现错误或警告。
+```
+void printInts(List<int> a) => print(a);
+void main() {
+  final list = <int>[];
+  list.add(1);
+  list.add(2);
+  printInts(list);
+}
+```
+---
+**什么是健全性？**
+健全性是指确保程序不会进入某些无效状态。健全的类型系统意味着你永远不会进入到一个表达式的值与表达式的静态类型不匹配的状态。例如，如果一个表达式的静态类型是`String`，那么在运行时，你只能在求值时获得一个字符串。
+`Dart `的类型系统，如 `Java `和 `C# `中的类型系统，是健全的。它使用静态检查（编译时错误）和运行时检查来强制执行这种健全性。例如，将 `String `赋值给 `int `是编译时错误。如果对象不是 `String`，则使用 `as String`将对象转换为 `String `会导致运行时错误。
+
+**健全性的好处：**  
+健全的类型系统有几个好处：
+- 在编译时发现类型相关的错误。 健全的类型系统强制代码对其类型明确无误，因此可能在运行时难以发现的类型相关错误会在编译时被发现。
+- 代码更易读。 代码更容易阅读，因为您可以依赖值确实具有指定的类型。在健全的 `Dart `中，类型不能说谎。
+- 代码更易维护。 使用健全的类型系统，当您更改一个代码块时，类型系统会警告您其他代码块刚刚发生了崩溃。
+- 更好的提前编译 (`AOT`) 编译。 虽然没有类型也可以进行 `AOT `编译，但生成的代码效率要低得多。  
+
+**通过静态分析的小技巧 :**  
+大多数静态类型的规则都很容易理解，以下是一些不太明显的规则：  
+- 在重写方法时，使用健全的返回类型.这意味着，重写方法的返回类型必须是其超类方法的返回类型的子类型。这可以确保代码的健全性，并防止错误在运行时发生.
+- 在重写方法时，使用健全的参数类型.这意味着，重写方法的参数类型必须是其超类方法的参数类型的子类型。这可以确保代码的健全性，并防止错误在运行时发生。
+- 不要将动态列表用作类型列表。这意味着，不要将类型为 `dynamic `的列表用作类型为 `List<T> `的列表。这可以防止错误在运行时发生。
+
+让我们通过使用以下类型层次结构的示例来详细了解这些规则：  
+Animal 子类：Alligator Cat :子类 Lion Maine Coon  HoneyBadger   
+
+---
+**重写方法时使用正确的返回类型：**
+- 子类中方法的返回类型必须与超类中方法的返回类型相同或为其子类型。考虑`Anima`类中的`getter`方法:
+```
+class Animal{
+  void chase(Animal a){...}
+  Animal get parent => ...
+}
+```
+Animal的getter方法返回了Animal类型。子类HoneyBadger中，可以使用HoneyBadger(或任何其他子类型)替换getter返回类型。但不允许使用不相关的类型。
+```
+class HoneyBadger extends Animal{
+  // override 重写：子类对父类允许访问的方法的实现过程进行重新编写，返回值和形参都不能改变。即外壳不变，核心重写
+  @override
+  void chase(Animal a){...}
+  @override
+  HoneyBadger get parent => ...
+
+}
+```
+---
+**重写方法时使用正确的参数类型：**  
+重写方法的参数必须具有与超类中相应参数相同的类型或超类型。不要通过用原始参数的子类型替换类型来“收紧”参数类型(参数类型“收紧”是指将参数类型由父类类型替换为子类类型)。
+>注意:如果您有充分的理由使用子类型，则可以使用 `covariant `关键字  
+
+使用Animal 类的chase(Animal) 方法：
+```
+class Animal{
+  void chase(Animal a){...}
+  Animal get parent => ...s
+}
+```
+`chase() `方法接受一个 `Animal.HoneyBadger `会追逐任何东西。可以重写`chase()`方法来获取任何东西（`Object`）。
+```
+class HoneyBadger extends Animal{
+  @override
+  void chase(Object a){...}
+  @override
+  Animal get parent => ...
+}
+```
+以下代码将`chase()`方法上的参数从`Animal`收紧到`Mouse`（`Animal`的子类）
+```
+// 编译时报错
+class Mouse extends Animal {...}
+
+class Cat extends Animal {
+  @override
+  void chase(Mouse x) { ... }
+}
+```
+这段代码不是类型安全的，因为这样可能定义一只猫，让其去追鳄鱼。
+```
+Animal a = Cat();
+a.chase(Alligator()); // Not type safe or feline safe
+```
+---
+**不要将动态列表用作类型化列表：**  
+当你想要一个包含不同种类内容的列表时，动态列表是很好的选择。然而，不能将动态列表用作类型化列表。  
+该规则也适用于泛型类型的实例。  
+下面的代码创建了一个Dog的动态列表，将其赋值给一个Cat类型的列表，这在静态分析时产生错误：
+```
+// 编译时产生错误
+class Cat extends Animal { ... }
+
+class Dog extends Animal { ... }
+
+void main() {
+  List<Cat> foo = <dynamic>[Dog()]; // Error
+  List<dynamic> bar = <dynamic>[Dog(), Cat()]; // OK
+}
+```
+---
+**运行时检查 :**
+运行时检查可以处理编译时无法检测到的类型安全问题。  
+例如，以下代码在运行时抛出异常，因为将狗列表转换为猫列表是错误的：
+```
+// 运行时错误
+void main() {
+  List<Animal> animals = [Dog()];
+  List<Cat> cats = animals as List<Cat>;
+}
+```
+---
+**类型推断（Type inference）**  
+分析器可以推断字段、方法、局部变量和大多数通用类型参数的类型。当分析器没有足够的信息来推断特定类型时，它会使用动态类型。  
+下面是类型推断如何与泛型配合使用的示例。在此示例中，名为 Arguments 的变量保存一个映射，该映射将字符串键与各种类型的值配对。  
+如果显式键入变量，则可以这样写：
+```
+Map<String, dynamic> arguments = {'argA': 'hello', 'argB': 42};
+```
+或者，您可以使用 var 或 Final，让 Dart 推断类型:
+```
+var arguments = {'argA': 'hello', 'argB': 42}; // Map<String, Object>
+```
+Map字面量从其条目推断其类型，然后变量从Map字面量的类型推断其类型。在此映射中，键都是字符串，但值具有不同的类型（String 和 int，它们具有 Object 的上限）。因此，映射字面量具有类型 Map<String, Object>，参数变量也具有该类型。
+
+---
+**字段和方法推断 :**  
+没有指定类型并且重写超类中的字段或方法的字段或方法将继承超类方法或字段的类型。  
+没有声明或继承类型但使用初始值声明的字段将根据初始值获取推断类型。
+
+---
+**静态字段推断 :**
+静态字段和变量从其初始值设定项推断出其类型。请注意，如果遇到循环，推理​​就会失败（也就是说，推断变量的类型取决于了解该变量的类型）
+
+--- 
+**局部变量推断 :**
+局部变量类型是从其初始值设定项（如果有）推断出来的。不考虑后续分配。这可能意味着可能推断出过于精确的类型。如果是这样，您可以添加类型注释。
+```
+var x = 3; // x被推断为int类型
+x = 4.0; // 静态编译时错误
+```
+修改为正确的
+```
+num x =3; // num类型可以是double或int
+x = 4.0;
+```
+---
+**参数类型推断：**  
+构造函数调用和泛型方法调用的类型参数是根据出现上下文中的向下信息以及构造函数或泛型方法的参数中的向上信息的组合来推断的。如果推理没有达到您想要或期望的效果，您始终可以显式指定类型参数。
+```
+List<int> listOfInt = [];
+
+// Inferred as if you wrote <double>[3.0].
+var listOfDouble = [3.0];
+
+// Inferred as Iterable<int>.
+var ints = listOfDouble.map((x) => x.toInt());
+```
+在最后一个示例中，使用向下信息将 x 推断为 double。使用向上信息将闭包的返回类型推断为 int。 Dart 在推断 map() 方法的类型参数时使用此返回类型作为向上信息：<int>。
+
+**替代类型：（Substituting types）**  
+当您重写方法时，您正在将一种类型的某些内容（在旧方法中）替换为可能具有新类型的某些内容（在新方法中）。类似的，当您将参数传递给函数时，您正在将具有一种类型的内容（具有声明类型的参数）替换为具有另一种类型的内容(实际参数)。什么时候可以用具有子类型或超类型的东西替换具有一种类型的东西？  
+在替换类型时，从消费者和生产者的胶角度考虑思考会有所帮助。消费者吸收一种类型，生产者生成一种类型。   
+你可以将消费者的类型替换为超类型，将生产者的类型替换为子类型。  
+下面示例是简单类型赋值和泛型类型赋值：  
+
+**简单类型赋值：**  
+将对象分配给对象时，什么时候可以用不同的类型替换一个类型？答案取决于该对象是消费者还是生产者。  
+考虑以下类型层次结构：Animal > Alligator  Cat > Lion MaineCoon HoneyBadger  
+考虑以下简单分配，其中Cat c是消费者，Cat()是生产者:Cat c = Cat();  
+在使用位置上，可以安全的将使用特定类型(Cat)的内容替换为使用任何内容(Animal)的内容，因此将Cat c替换为以下内容是允许的，因为Animal是Cat的超类型：Animal c = Cat();  
+但是使MaineCoon c替换Cat c会破坏类型安全，因为超类可能提供具有不同行为的Cat类型，例如Lion:    
+在生产位置，用更具体的类型(MaineCoon)替换生成类型(Cat)的内容是安全的，因此，以下内容是允许的：Cat c = MaineCoon();
+
+**泛型类型赋值：**  
+泛型类型的规则相同吗？是的，考虑动物列表层次结构-Cat的List是Animal的List的子类型，并且是a的超类型MaineCoon的List。`List<Animal>` > `List<Cat>` > `List<MaineCoon>`。  
+在以下的示例中，可以将Mainecoon的列表分配给myCats,因为`List<MaineCoon>`是`List<Cat>`的子类型：  
+```
+List<MaineCoon> myMaineCoons = ...
+List<Cat> myCats = myMaineCoons;
+```
+如果像另一个方向走呢？您可以将`Animal`列表分配给`List<Cat>`吗？  
+```
+List<Animal> myAnimals = ...
+List<Cat> myCats = myAnimals;
+```
+此分配未通过静态分析，因为它创建了隐式向下转型，而非 dynamic 类型（例如 Animal ）不允许这样做。  
+要使此代码通过静态分析，可以使用显式强制转换。  
+```
+List<Animal> myAnimals = ...
+List<Cat> myCats = myAnimals as List<Cat>;
+```
+不过显式强制转换在运行时可能扔会失败，具体取决于所转换列表的实际类型(myAnimals)  
+
+**Method 方法：**  
+当重写方法时，生产者和消费者规则仍然适用。例如：
+```
+class Animal{
+  void chase(Animal a){}
+  Animal get parent => ...
+}
+```
+对于使用者（例如chase(Animal)方法），您可以将参数类型替换为超类型。对于生产者(例如parent getter方法)，您可以使用子类型替换返回类型。

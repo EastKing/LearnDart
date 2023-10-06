@@ -1,30 +1,40 @@
-
-void printTypeName1(object) {
-  if (object is String) {
-    print('String');
-  } else if (object is int) { 
-    print('int');
-  } else {
-    print('Unknown');
+class Animal{
+  void chase(Animal a){
+    print('Animal is chasing');
   }
 }
-void printTypeName(object) {
-  if (object case String) {
-    print('String'); 
-  } else if (object case int) {
-    print('int');
-  } else {
-    print('Unknown');
-  } 
+
+class HoneyBadger extends Animal {
+  @override
+  void chase(Object a){
+    print("HoneyBadger is chasing");
+  }
+  
+}
+
+class Mouse extends Animal {
+  void chase(Animal a){
+    print('Mouse is chasing');
+  }
+}
+
+class Cat extends Animal {
+  @override
+  void chase(Animal x) { 
+    print('Cat is chasing');
+  }
+} 
+
+class Alligator extends Animal {
+  @override
+  void chase(Animal x) {
+    print('Alligator is chasing');
+  }
 }
 void main(){
-  printTypeName("String");
-  printTypeName1("String");
-  List<int> list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-// 创建一个包含所有偶数数字的列表
-  List<int> evenNumbers = [for (int i in list) if (i % 2 case 0) i,];
 
-// 输出 evenNumbers
-  print(evenNumbers);
+  
+  Animal a = HoneyBadger();
+  a.chase(Alligator()); // Not type safe or feline safe.
 }
